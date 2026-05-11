@@ -1,5 +1,8 @@
 #include "register_types.h"
 
+#include "oscilloscope_visualizer.h"
+#include "phase_scope_visualizer.h"
+#include "realtime_spectrum_visualizer.h"
 #include "spectrum_visualizer.h"
 #include "vu_meter.h"
 #include "wave_visualizer.h"
@@ -19,6 +22,9 @@ void initialize_audio_visualizer_module(ModuleInitializationLevel p_level) {
 		return;
 	}
 
+	GDREGISTER_CLASS(RealtimeSpectrumVisualizer);
+	GDREGISTER_CLASS(OscilloscopeVisualizer);
+	GDREGISTER_CLASS(PhaseScopeVisualizer);
 	GDREGISTER_CLASS(SpectrumVisualizer);
 	GDREGISTER_CLASS(VUMeter);
 	GDREGISTER_CLASS(WaveVisualizer);

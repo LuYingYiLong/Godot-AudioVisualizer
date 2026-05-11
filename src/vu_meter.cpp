@@ -33,6 +33,14 @@ namespace godot {
 
 			return 20.0f * std::log10(p_linear);
 		}
+
+		inline float move_toward_float(float p_from, float p_to, float p_delta) {
+			if (p_from < p_to) {
+				return std::min(p_from + p_delta, p_to);
+			}
+
+			return std::max(p_from - p_delta, p_to);
+		}
 	}
 
 	void VUMeter::_bind_methods() {
@@ -41,6 +49,21 @@ namespace godot {
 
 		ClassDB::bind_method(D_METHOD("set_bus", "bus"), &VUMeter::set_bus);
 		ClassDB::bind_method(D_METHOD("get_bus"), &VUMeter::get_bus);
+
+		ClassDB::bind_method(D_METHOD("set_animation_enabled", "enabled"), &VUMeter::set_animation_enabled);
+		ClassDB::bind_method(D_METHOD("get_animation_enabled"), &VUMeter::get_animation_enabled);
+		ClassDB::bind_method(D_METHOD("set_rise_db_per_second", "speed"), &VUMeter::set_rise_db_per_second);
+		ClassDB::bind_method(D_METHOD("get_rise_db_per_second"), &VUMeter::get_rise_db_per_second);
+		ClassDB::bind_method(D_METHOD("set_fall_db_per_second", "speed"), &VUMeter::set_fall_db_per_second);
+		ClassDB::bind_method(D_METHOD("get_fall_db_per_second"), &VUMeter::get_fall_db_per_second);
+		ClassDB::bind_method(D_METHOD("set_peak_hold_enabled", "enabled"), &VUMeter::set_peak_hold_enabled);
+		ClassDB::bind_method(D_METHOD("get_peak_hold_enabled"), &VUMeter::get_peak_hold_enabled);
+		ClassDB::bind_method(D_METHOD("set_peak_hold_time", "time"), &VUMeter::set_peak_hold_time);
+		ClassDB::bind_method(D_METHOD("get_peak_hold_time"), &VUMeter::get_peak_hold_time);
+		ClassDB::bind_method(D_METHOD("set_peak_fall_db_per_second", "speed"), &VUMeter::set_peak_fall_db_per_second);
+		ClassDB::bind_method(D_METHOD("get_peak_fall_db_per_second"), &VUMeter::get_peak_fall_db_per_second);
+		ClassDB::bind_method(D_METHOD("set_peak_bar_height", "height"), &VUMeter::set_peak_bar_height);
+		ClassDB::bind_method(D_METHOD("get_peak_bar_height"), &VUMeter::get_peak_bar_height);
 
 		ClassDB::bind_method(D_METHOD("set_dbfs", "dbfs"), &VUMeter::set_dbfs);
 		ClassDB::bind_method(D_METHOD("get_dbfs"), &VUMeter::get_dbfs);
@@ -90,6 +113,9 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("set_dangerous_color", "color"), &VUMeter::set_dangerous_color);
 		ClassDB::bind_method(D_METHOD("get_dangerous_color"), &VUMeter::get_dangerous_color);
 
+		ClassDB::bind_method(D_METHOD("set_peak_color", "color"), &VUMeter::set_peak_color);
+		ClassDB::bind_method(D_METHOD("get_peak_color"), &VUMeter::get_peak_color);
+
 		ClassDB::bind_method(D_METHOD("set_tick_color", "color"), &VUMeter::set_tick_color);
 		ClassDB::bind_method(D_METHOD("get_tick_color"), &VUMeter::get_tick_color);
 
@@ -98,6 +124,13 @@ namespace godot {
 
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_bus"), "set_use_bus", "get_use_bus");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "bus", PROPERTY_HINT_ENUM_SUGGESTION, "Master"), "set_bus", "get_bus");
+		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "animation_enabled"), "set_animation_enabled", "get_animation_enabled");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "rise_db_per_second", PROPERTY_HINT_RANGE, "1.0,720.0,1.0"), "set_rise_db_per_second", "get_rise_db_per_second");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fall_db_per_second", PROPERTY_HINT_RANGE, "1.0,720.0,1.0"), "set_fall_db_per_second", "get_fall_db_per_second");
+		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "peak_hold_enabled"), "set_peak_hold_enabled", "get_peak_hold_enabled");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "peak_hold_time", PROPERTY_HINT_RANGE, "0.0,10.0,0.1"), "set_peak_hold_time", "get_peak_hold_time");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "peak_fall_db_per_second", PROPERTY_HINT_RANGE, "0.0,240.0,1.0"), "set_peak_fall_db_per_second", "get_peak_fall_db_per_second");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "peak_bar_height", PROPERTY_HINT_RANGE, "1.0,16.0,0.5"), "set_peak_bar_height", "get_peak_bar_height");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "dbfs", PROPERTY_HINT_RANGE, "-120.0,12.0,0.1"), "set_dbfs", "get_dbfs");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "min_db", PROPERTY_HINT_RANGE, "-120.0,-1.0,1.0"), "set_min_db", "get_min_db");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_db", PROPERTY_HINT_RANGE, "-60.0,12.0,1.0"), "set_max_db", "get_max_db");
@@ -114,13 +147,14 @@ namespace godot {
 		ADD_PROPERTY(PropertyInfo(Variant::COLOR, "safe_color"), "set_safe_color", "get_safe_color");
 		ADD_PROPERTY(PropertyInfo(Variant::COLOR, "warn_color"), "set_warn_color", "get_warn_color");
 		ADD_PROPERTY(PropertyInfo(Variant::COLOR, "dangerous_color"), "set_dangerous_color", "get_dangerous_color");
+		ADD_PROPERTY(PropertyInfo(Variant::COLOR, "peak_color"), "set_peak_color", "get_peak_color");
 		ADD_PROPERTY(PropertyInfo(Variant::COLOR, "tick_color"), "set_tick_color", "get_tick_color");
 		ADD_PROPERTY(PropertyInfo(Variant::COLOR, "label_color"), "set_label_color", "get_label_color");
 	}
 
 	VUMeter::VUMeter() {
 		set_clip_contents(true);
-		set_process(false);
+		update_processing();
 		apply_meter_height();
 	}
 
@@ -129,10 +163,8 @@ namespace godot {
 
 	void VUMeter::_notification(int p_what) {
 		if (p_what == NOTIFICATION_PROCESS) {
-			if (use_bus) {
-				queue_redraw();
-			}
-
+			update_meter((float)get_process_delta_time());
+			queue_redraw();
 			return;
 		}
 
@@ -155,8 +187,11 @@ namespace godot {
 
 		const float safe_limit = clamp_float(warn_db, min_db, max_db);
 		const float warn_limit = clamp_float(std::max(warn_db, dangerous_db), min_db, max_db);
-		const float source_db = get_current_dbfs();
-		const float current_db = std::isfinite(source_db) ? clamp_float(source_db, min_db, max_db) : min_db;
+		if (!is_processing()) {
+			update_meter(0.0f);
+		}
+
+		const float current_db = std::isfinite(displayed_dbfs) ? clamp_float(displayed_dbfs, min_db, max_db) : min_db;
 
 		draw_db_segment(min_db, std::min(current_db, safe_limit), safe_color, meter_width, height);
 
@@ -166,6 +201,10 @@ namespace godot {
 
 		if (current_db > warn_limit) {
 			draw_db_segment(warn_limit, current_db, dangerous_color, meter_width, height);
+		}
+
+		if (peak_hold_enabled) {
+			draw_peak_bar(meter_width, height);
 		}
 
 		if (!draw_ticks && !draw_labels) {
@@ -223,6 +262,49 @@ namespace godot {
 		Vector2 minimum_size = get_custom_minimum_size();
 		minimum_size.y = std::max(1.0f, meter_height);
 		set_custom_minimum_size(minimum_size);
+	}
+
+	void VUMeter::update_processing() {
+		set_process(use_bus || animation_enabled || peak_hold_enabled);
+	}
+
+	void VUMeter::update_meter(float p_delta) {
+		const float source_db = get_current_dbfs();
+		const float target_db = std::isfinite(source_db) ? clamp_float(source_db, min_db, max_db) : min_db;
+		const float delta = std::max(0.0f, p_delta);
+
+		if (!animation_enabled || delta <= 0.0f) {
+			displayed_dbfs = target_db;
+		}
+		else {
+			const float speed = target_db > displayed_dbfs ? rise_db_per_second : fall_db_per_second;
+			displayed_dbfs = move_toward(displayed_dbfs, target_db, std::max(0.0f, speed) * delta);
+		}
+
+		displayed_dbfs = clamp_float(displayed_dbfs, min_db, max_db);
+
+		if (!peak_hold_enabled) {
+			peak_dbfs = displayed_dbfs;
+			peak_age = 0.0f;
+			return;
+		}
+
+		if (displayed_dbfs >= peak_dbfs) {
+			peak_dbfs = displayed_dbfs;
+			peak_age = 0.0f;
+		}
+		else {
+			peak_age += delta;
+			if (peak_age > peak_hold_time) {
+				peak_dbfs = move_toward(peak_dbfs, displayed_dbfs, peak_fall_db_per_second * delta);
+			}
+		}
+
+		peak_dbfs = clamp_float(peak_dbfs, min_db, max_db);
+	}
+
+	float VUMeter::move_toward(float p_from, float p_to, float p_delta) const {
+		return move_toward_float(p_from, p_to, std::max(0.0f, p_delta));
 	}
 
 	float VUMeter::get_current_dbfs() const {
@@ -291,6 +373,12 @@ namespace godot {
 		draw_rect(Rect2(Vector2(0.0f, y_top), Vector2(p_meter_width, y_bottom - y_top)), p_color);
 	}
 
+	void VUMeter::draw_peak_bar(float p_meter_width, float p_height) {
+		const float bar_height = std::max(1.0f, peak_bar_height);
+		const float y = clamp_float(db_to_y(peak_dbfs, p_height) - bar_height * 0.5f, 0.0f, std::max(0.0f, p_height - bar_height));
+		draw_rect(Rect2(Vector2(0.0f, y), Vector2(p_meter_width, bar_height)), peak_color);
+	}
+
 	void VUMeter::set_dbfs(float p_dbfs) {
 		dbfs = std::isfinite(p_dbfs) ? p_dbfs : min_db;
 		queue_redraw();
@@ -308,6 +396,8 @@ namespace godot {
 
 		min_db = new_min;
 		dbfs = clamp_float(dbfs, min_db, max_db);
+		displayed_dbfs = clamp_float(displayed_dbfs, min_db, max_db);
+		peak_dbfs = clamp_float(peak_dbfs, min_db, max_db);
 		queue_redraw();
 	}
 
@@ -323,6 +413,8 @@ namespace godot {
 
 		max_db = new_max;
 		dbfs = clamp_float(dbfs, min_db, max_db);
+		displayed_dbfs = clamp_float(displayed_dbfs, min_db, max_db);
+		peak_dbfs = clamp_float(peak_dbfs, min_db, max_db);
 		queue_redraw();
 	}
 
@@ -397,7 +489,7 @@ namespace godot {
 		}
 
 		use_bus = p_enabled;
-		set_process(use_bus);
+		update_processing();
 		notify_property_list_changed();
 		queue_redraw();
 	}
@@ -417,6 +509,75 @@ namespace godot {
 
 	StringName VUMeter::get_bus() const {
 		return bus;
+	}
+
+	void VUMeter::set_animation_enabled(bool p_enabled) {
+		if (animation_enabled == p_enabled) {
+			return;
+		}
+
+		animation_enabled = p_enabled;
+		update_processing();
+		queue_redraw();
+	}
+
+	bool VUMeter::get_animation_enabled() const {
+		return animation_enabled;
+	}
+
+	void VUMeter::set_rise_db_per_second(float p_speed) {
+		rise_db_per_second = std::max(0.0f, p_speed);
+	}
+
+	float VUMeter::get_rise_db_per_second() const {
+		return rise_db_per_second;
+	}
+
+	void VUMeter::set_fall_db_per_second(float p_speed) {
+		fall_db_per_second = std::max(0.0f, p_speed);
+	}
+
+	float VUMeter::get_fall_db_per_second() const {
+		return fall_db_per_second;
+	}
+
+	void VUMeter::set_peak_hold_enabled(bool p_enabled) {
+		if (peak_hold_enabled == p_enabled) {
+			return;
+		}
+
+		peak_hold_enabled = p_enabled;
+		update_processing();
+		queue_redraw();
+	}
+
+	bool VUMeter::get_peak_hold_enabled() const {
+		return peak_hold_enabled;
+	}
+
+	void VUMeter::set_peak_hold_time(float p_time) {
+		peak_hold_time = std::max(0.0f, p_time);
+	}
+
+	float VUMeter::get_peak_hold_time() const {
+		return peak_hold_time;
+	}
+
+	void VUMeter::set_peak_fall_db_per_second(float p_speed) {
+		peak_fall_db_per_second = std::max(0.0f, p_speed);
+	}
+
+	float VUMeter::get_peak_fall_db_per_second() const {
+		return peak_fall_db_per_second;
+	}
+
+	void VUMeter::set_peak_bar_height(float p_height) {
+		peak_bar_height = std::max(1.0f, p_height);
+		queue_redraw();
+	}
+
+	float VUMeter::get_peak_bar_height() const {
+		return peak_bar_height;
 	}
 
 	void VUMeter::set_major_tick_db(int p_db) {
@@ -507,6 +668,15 @@ namespace godot {
 
 	Color VUMeter::get_dangerous_color() const {
 		return dangerous_color;
+	}
+
+	void VUMeter::set_peak_color(const Color& p_color) {
+		peak_color = p_color;
+		queue_redraw();
+	}
+
+	Color VUMeter::get_peak_color() const {
+		return peak_color;
 	}
 
 	void VUMeter::set_tick_color(const Color& p_color) {

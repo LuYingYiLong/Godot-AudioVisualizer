@@ -20,8 +20,18 @@ namespace godot {
 		float meter_height = 120.0f;
 		float scale_width = 18.0f;
 		float content_padding = 3.0f;
-		bool use_bus = false;
+		bool use_bus = true;
 		StringName bus = StringName("Master");
+		bool animation_enabled = true;
+		float displayed_dbfs = -60.0f;
+		float rise_db_per_second = 180.0f;
+		float fall_db_per_second = 90.0f;
+		bool peak_hold_enabled = true;
+		float peak_dbfs = -60.0f;
+		float peak_age = 0.0f;
+		float peak_hold_time = 0.8f;
+		float peak_fall_db_per_second = 24.0f;
+		float peak_bar_height = 2.0f;
 		int major_tick_db = 6;
 		int label_font_size = 8;
 		bool draw_ticks = true;
@@ -31,14 +41,19 @@ namespace godot {
 		Color safe_color = Color(0.04f, 0.8f, 0.0f, 1.0f);
 		Color warn_color = Color(1.0f, 0.75f, 0.0f, 1.0f);
 		Color dangerous_color = Color(1.0f, 0.175f, 0.175f, 1.0f);
+		Color peak_color = Color(1.0f, 1.0f, 1.0f, 0.9f);
 		Color tick_color = Color(1.0f, 1.0f, 1.0f, 1.0f);
 		Color label_color = Color(1.0f, 1.0f, 1.0f, 1.0f);
 
 		void apply_meter_height();
+		void update_processing();
+		void update_meter(float p_delta);
+		float move_toward(float p_from, float p_to, float p_delta) const;
 		float get_current_dbfs() const;
 		float get_bus_dbfs(bool& r_found_analyzer) const;
 		float db_to_y(float p_db, float p_height) const;
 		void draw_db_segment(float p_from_db, float p_to_db, const Color& p_color, float p_meter_width, float p_height);
+		void draw_peak_bar(float p_meter_width, float p_height);
 
 	protected:
 		static void _bind_methods();
@@ -79,6 +94,27 @@ namespace godot {
 		void set_bus(const StringName& p_bus);
 		StringName get_bus() const;
 
+		void set_animation_enabled(bool p_enabled);
+		bool get_animation_enabled() const;
+
+		void set_rise_db_per_second(float p_speed);
+		float get_rise_db_per_second() const;
+
+		void set_fall_db_per_second(float p_speed);
+		float get_fall_db_per_second() const;
+
+		void set_peak_hold_enabled(bool p_enabled);
+		bool get_peak_hold_enabled() const;
+
+		void set_peak_hold_time(float p_time);
+		float get_peak_hold_time() const;
+
+		void set_peak_fall_db_per_second(float p_speed);
+		float get_peak_fall_db_per_second() const;
+
+		void set_peak_bar_height(float p_height);
+		float get_peak_bar_height() const;
+
 		void set_major_tick_db(int p_db);
 		int get_major_tick_db() const;
 
@@ -102,6 +138,9 @@ namespace godot {
 
 		void set_dangerous_color(const Color& p_color);
 		Color get_dangerous_color() const;
+
+		void set_peak_color(const Color& p_color);
+		Color get_peak_color() const;
 
 		void set_tick_color(const Color& p_color);
 		Color get_tick_color() const;
