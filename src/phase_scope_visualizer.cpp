@@ -36,6 +36,8 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_use_bus"), &PhaseScopeVisualizer::get_use_bus);
 		ClassDB::bind_method(D_METHOD("set_bus", "bus"), &PhaseScopeVisualizer::set_bus);
 		ClassDB::bind_method(D_METHOD("get_bus"), &PhaseScopeVisualizer::get_bus);
+		ClassDB::bind_method(D_METHOD("set_bus_backend", "backend"), &PhaseScopeVisualizer::set_bus_backend);
+		ClassDB::bind_method(D_METHOD("get_bus_backend"), &PhaseScopeVisualizer::get_bus_backend);
 		ClassDB::bind_method(D_METHOD("set_samples", "samples"), &PhaseScopeVisualizer::set_samples);
 		ClassDB::bind_method(D_METHOD("get_samples"), &PhaseScopeVisualizer::get_samples);
 		ClassDB::bind_method(D_METHOD("set_sample_count", "count"), &PhaseScopeVisualizer::set_sample_count);
@@ -73,6 +75,7 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_balance"), &PhaseScopeVisualizer::get_balance);
 
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_bus"), "set_use_bus", "get_use_bus");
+		ADD_PROPERTY(PropertyInfo(Variant::INT, "bus_backend", PROPERTY_HINT_ENUM, "Godot,FmodPlayer"), "set_bus_backend", "get_bus_backend");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "bus", PROPERTY_HINT_ENUM_SUGGESTION, "Master"), "set_bus", "get_bus");
 		ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR2_ARRAY, "samples"), "set_samples", "get_samples");
 		ADD_PROPERTY(PropertyInfo(Variant::INT, "sample_count", PROPERTY_HINT_RANGE, "16,8192,1"), "set_sample_count", "get_sample_count");
@@ -139,19 +142,8 @@ namespace godot {
 	void PhaseScopeVisualizer::_validate_property(PropertyInfo& p_property) const {
 		const String name = p_property.name;
 		if (name == StringName("bus")) {
-			String bus_list;
-			AudioServer* audio_server = AudioServer::get_singleton();
-
-			if (audio_server) {
-				int bus_count = audio_server->get_bus_count();
-				for (int i = 0; i < bus_count; i++) {
-					if (i > 0) bus_list += ",";
-					bus_list += audio_server->get_bus_name(i);
-				}
-			}
-
 			p_property.hint = PROPERTY_HINT_ENUM;
-			p_property.hint_string = bus_list;
+			p_property.hint_string = AudioVisualizerBusUtils::get_bus_hint_string(bus_backend);
 		}
 	}
 
@@ -159,8 +151,13 @@ namespace godot {
 		bool found_capture = false;
 		if (use_bus) {
 			PackedVector2Array frames;
-			if (AudioVisualizerBusUtils::get_capture_frames(bus, std::max(1, sample_count), frames)) {
-				append_samples(frames);
+			if (AudioVisualizerBusUtils::get_capture_frames(bus, bus_backend, std::max(1, sample_count), frames)) {
+				if (frames.size() > 0) {
+					append_samples(frames);
+				}
+				else {
+					decay_live_samples();
+				}
 				found_capture = true;
 			}
 		}
@@ -190,6 +187,24 @@ namespace godot {
 		const int overflow = (int)live_samples.size() - std::max(1, sample_count);
 		if (overflow > 0) {
 			live_samples.erase(live_samples.begin(), live_samples.begin() + overflow);
+		}
+	}
+
+	void PhaseScopeVisualizer::decay_live_samples() {
+		if (live_samples.empty()) {
+			return;
+		}
+
+		bool has_signal = false;
+		for (Vector2& sample : live_samples) {
+			sample = Vector2(sample.x * 0.72f, sample.y * 0.72f);
+			if (std::abs(sample.x) > 0.0005f || std::abs(sample.y) > 0.0005f) {
+				has_signal = true;
+			}
+		}
+
+		if (!has_signal) {
+			live_samples.clear();
 		}
 	}
 
@@ -327,6 +342,21 @@ namespace godot {
 
 	StringName PhaseScopeVisualizer::get_bus() const {
 		return bus;
+	}
+
+	void PhaseScopeVisualizer::set_bus_backend(int p_backend) {
+		const int new_backend = std::min(std::max(static_cast<int>(AudioVisualizerBusUtils::BUS_BACKEND_GODOT), p_backend), static_cast<int>(AudioVisualizerBusUtils::BUS_BACKEND_FMOD_PLAYER));
+		if (bus_backend == new_backend) {
+			return;
+		}
+
+		bus_backend = new_backend;
+		notify_property_list_changed();
+		queue_redraw();
+	}
+
+	int PhaseScopeVisualizer::get_bus_backend() const {
+		return bus_backend;
 	}
 
 	void PhaseScopeVisualizer::set_samples(const PackedVector2Array& p_samples) {

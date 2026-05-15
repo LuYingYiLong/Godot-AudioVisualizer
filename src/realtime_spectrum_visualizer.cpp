@@ -28,6 +28,8 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_use_bus"), &RealtimeSpectrumVisualizer::get_use_bus);
 		ClassDB::bind_method(D_METHOD("set_bus", "bus"), &RealtimeSpectrumVisualizer::set_bus);
 		ClassDB::bind_method(D_METHOD("get_bus"), &RealtimeSpectrumVisualizer::get_bus);
+		ClassDB::bind_method(D_METHOD("set_bus_backend", "backend"), &RealtimeSpectrumVisualizer::set_bus_backend);
+		ClassDB::bind_method(D_METHOD("get_bus_backend"), &RealtimeSpectrumVisualizer::get_bus_backend);
 		ClassDB::bind_method(D_METHOD("set_magnitudes", "magnitudes"), &RealtimeSpectrumVisualizer::set_magnitudes);
 		ClassDB::bind_method(D_METHOD("get_magnitudes"), &RealtimeSpectrumVisualizer::get_magnitudes);
 		ClassDB::bind_method(D_METHOD("set_magnitudes_are_db", "enabled"), &RealtimeSpectrumVisualizer::set_magnitudes_are_db);
@@ -90,6 +92,7 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_peak_color"), &RealtimeSpectrumVisualizer::get_peak_color);
 
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_bus"), "set_use_bus", "get_use_bus");
+		ADD_PROPERTY(PropertyInfo(Variant::INT, "bus_backend", PROPERTY_HINT_ENUM, "Godot,FmodPlayer"), "set_bus_backend", "get_bus_backend");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "bus", PROPERTY_HINT_ENUM_SUGGESTION, "Master"), "set_bus", "get_bus");
 		ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT32_ARRAY, "magnitudes"), "set_magnitudes", "get_magnitudes");
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "magnitudes_are_db"), "set_magnitudes_are_db", "get_magnitudes_are_db");
@@ -172,19 +175,8 @@ namespace godot {
 	void RealtimeSpectrumVisualizer::_validate_property(PropertyInfo& p_property) const {
 		const String name = p_property.name;
 		if (name == StringName("bus")) {
-			String bus_list;
-			AudioServer* audio_server = AudioServer::get_singleton();
-
-			if (audio_server) {
-				int bus_count = audio_server->get_bus_count();
-				for (int i = 0; i < bus_count; i++) {
-					if (i > 0) bus_list += ",";
-					bus_list += audio_server->get_bus_name(i);
-				}
-			}
-
 			p_property.hint = PROPERTY_HINT_ENUM;
-			p_property.hint_string = bus_list;
+			p_property.hint_string = AudioVisualizerBusUtils::get_bus_hint_string(bus_backend);
 		}
 	}
 
@@ -240,11 +232,6 @@ namespace godot {
 	void RealtimeSpectrumVisualizer::read_bus_spectrum(bool& r_found_analyzer) {
 		r_found_analyzer = false;
 
-		Ref<AudioEffectSpectrumAnalyzerInstance> analyzer_instance;
-		if (!AudioVisualizerBusUtils::get_spectrum_analyzer_instance(bus, analyzer_instance)) {
-			return;
-		}
-
 		AudioServer* audio_server = AudioServer::get_singleton();
 		const float nyquist = audio_server ? std::max(20.0f, audio_server->get_mix_rate() * 0.5f) : max_frequency;
 		const float max_freq = std::min(std::max(min_frequency + 1.0f, max_frequency), nyquist);
@@ -254,7 +241,11 @@ namespace godot {
 			const float end_pos = (float)(i + 1) / (float)bar_count;
 			const float from_hz = band_frequency(start_pos);
 			const float to_hz = std::max(from_hz + 1.0f, std::min(max_freq, band_frequency(end_pos)));
-			const Vector2 magnitude = analyzer_instance->get_magnitude_for_frequency_range(from_hz, to_hz, AudioEffectSpectrumAnalyzerInstance::MAGNITUDE_MAX);
+			Vector2 magnitude;
+			if (!AudioVisualizerBusUtils::get_spectrum_magnitude_for_frequency_range(bus, bus_backend, from_hz, to_hz, magnitude)) {
+				return;
+			}
+
 			float db = AudioVisualizerBusUtils::linear_to_db(std::max(std::max(magnitude.x, magnitude.y), MIN_LINEAR));
 
 			if (slope_enabled) {
@@ -412,6 +403,21 @@ namespace godot {
 
 	StringName RealtimeSpectrumVisualizer::get_bus() const {
 		return bus;
+	}
+
+	void RealtimeSpectrumVisualizer::set_bus_backend(int p_backend) {
+		const int new_backend = std::min(std::max(static_cast<int>(AudioVisualizerBusUtils::BUS_BACKEND_GODOT), p_backend), static_cast<int>(AudioVisualizerBusUtils::BUS_BACKEND_FMOD_PLAYER));
+		if (bus_backend == new_backend) {
+			return;
+		}
+
+		bus_backend = new_backend;
+		notify_property_list_changed();
+		queue_redraw();
+	}
+
+	int RealtimeSpectrumVisualizer::get_bus_backend() const {
+		return bus_backend;
 	}
 
 	void RealtimeSpectrumVisualizer::set_magnitudes(const PackedFloat32Array& p_magnitudes) {

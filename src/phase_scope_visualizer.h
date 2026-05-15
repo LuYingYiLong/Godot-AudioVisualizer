@@ -15,6 +15,7 @@ namespace godot {
 	private:
 		bool use_bus = true;
 		StringName bus = StringName("Master");
+		int bus_backend = 0;
 		PackedVector2Array samples;
 
 		int sample_count = 1024;
@@ -27,9 +28,9 @@ namespace godot {
 		float meter_width = 44.0f;
 		float smoothing = 0.18f;
 
-		Color background_color = Color(0.052f, 0.052f, 0.075f, 1.0f);
-		Color grid_color = Color(0.95f, 0.65f, 0.95f, 0.25f);
-		Color point_color = Color(1.0f, 0.56f, 0.88f, 0.85f);
+		Color background_color = Color("#000000");
+		Color grid_color = Color("#f2f2f240");
+		Color point_color = Color("#ffffffd9");
 		Color meter_negative_color = Color(1.0f, 0.2f, 0.38f, 1.0f);
 		Color meter_positive_color = Color(0.35f, 1.0f, 0.72f, 1.0f);
 		Color meter_neutral_color = Color(1.0f, 0.82f, 0.24f, 1.0f);
@@ -41,6 +42,7 @@ namespace godot {
 
 		void update_samples();
 		void append_samples(const PackedVector2Array& p_frames);
+		void decay_live_samples();
 		void update_phase_metrics();
 		Rect2 get_scope_rect() const;
 		Rect2 get_meter_rect() const;
@@ -62,6 +64,9 @@ namespace godot {
 
 		void set_bus(const StringName& p_bus);
 		StringName get_bus() const;
+
+		void set_bus_backend(int p_backend);
+		int get_bus_backend() const;
 
 		void set_samples(const PackedVector2Array& p_samples);
 		PackedVector2Array get_samples() const;

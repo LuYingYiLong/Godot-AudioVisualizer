@@ -19,38 +19,62 @@ namespace godot {
 			DISPLAY_MODE_LISSAJOUS = 2
 		};
 
+		enum XYRenderMode {
+			XY_RENDER_MODE_POINTS = 0,
+			XY_RENDER_MODE_LINE = 1,
+			XY_RENDER_MODE_PHOSPHOR = 2
+		};
+
+		enum XYOrientation {
+			XY_ORIENTATION_AUTO = 0,
+			XY_ORIENTATION_LEFT_RIGHT = 1,
+			XY_ORIENTATION_MID_SIDE = 2,
+			XY_ORIENTATION_ROTATE_NEGATIVE_45 = 3,
+			XY_ORIENTATION_INVERT_Y = 4
+		};
+
 	private:
 		bool use_bus = true;
 		StringName bus = StringName("Master");
+		int bus_backend = 0;
 		PackedVector2Array samples;
 
 		int sample_count = 1024;
 		int display_mode = DISPLAY_MODE_WAVEFORM;
+		int xy_render_mode = XY_RENDER_MODE_POINTS;
+		int xy_orientation = XY_ORIENTATION_AUTO;
 		bool frozen = false;
 		bool draw_grid = true;
 		bool draw_center = true;
 		float gain = 1.0f;
 		float line_width = 2.0f;
 		float point_size = 2.0f;
+		float xy_line_width = 2.0f;
+		float xy_glow_width = 8.0f;
+		float xy_persistence = 0.65f;
 		float padding = 8.0f;
 		float stereo_gap = 4.0f;
 
-		Color background_color = Color(0.055f, 0.055f, 0.075f, 1.0f);
-		Color grid_color = Color(0.95f, 0.65f, 0.95f, 0.22f);
-		Color center_color = Color(1.0f, 0.75f, 0.95f, 0.5f);
-		Color left_color = Color(1.0f, 0.38f, 0.72f, 1.0f);
-		Color right_color = Color(0.35f, 0.85f, 1.0f, 1.0f);
-		Color xy_color = Color(1.0f, 0.78f, 0.98f, 0.9f);
+		Color background_color = Color("#000000");
+		Color grid_color = Color("#f2f2f238");
+		Color center_color = Color("#ffffff80");
+		Color left_color = Color("#ffffff");
+		Color right_color = Color("#ffffff");
+		Color xy_color = Color("#ffffffe6");
+		Color xy_glow_color = Color("#80ffe680");
 
 		std::vector<Vector2> live_samples;
 
 		void update_samples();
 		void append_samples(const PackedVector2Array& p_frames);
+		void decay_live_samples();
 		const std::vector<Vector2>& get_display_samples() const;
 		Rect2 get_canvas_rect() const;
 		void draw_scope_grid(const Rect2& p_rect);
 		void draw_waveform(const Rect2& p_rect);
 		void draw_xy(const Rect2& p_rect, bool p_lissajous);
+		Vector2 get_xy_point(const Vector2& p_sample, const Rect2& p_rect, bool p_lissajous) const;
+		void draw_xy_segment_trail(const PackedVector2Array& p_points, const Color& p_color, float p_width, float p_persistence);
 
 	protected:
 		static void _bind_methods();
@@ -67,6 +91,9 @@ namespace godot {
 		void set_bus(const StringName& p_bus);
 		StringName get_bus() const;
 
+		void set_bus_backend(int p_backend);
+		int get_bus_backend() const;
+
 		void set_samples(const PackedVector2Array& p_samples);
 		PackedVector2Array get_samples() const;
 
@@ -75,6 +102,12 @@ namespace godot {
 
 		void set_display_mode(int p_mode);
 		int get_display_mode() const;
+
+		void set_xy_render_mode(int p_mode);
+		int get_xy_render_mode() const;
+
+		void set_xy_orientation(int p_orientation);
+		int get_xy_orientation() const;
 
 		void set_frozen(bool p_enabled);
 		bool get_frozen() const;
@@ -93,6 +126,15 @@ namespace godot {
 
 		void set_point_size(float p_size);
 		float get_point_size() const;
+
+		void set_xy_line_width(float p_width);
+		float get_xy_line_width() const;
+
+		void set_xy_glow_width(float p_width);
+		float get_xy_glow_width() const;
+
+		void set_xy_persistence(float p_persistence);
+		float get_xy_persistence() const;
 
 		void set_padding(float p_padding);
 		float get_padding() const;
@@ -117,9 +159,14 @@ namespace godot {
 
 		void set_xy_color(const Color& p_color);
 		Color get_xy_color() const;
+
+		void set_xy_glow_color(const Color& p_color);
+		Color get_xy_glow_color() const;
 	};
 }
 
 VARIANT_ENUM_CAST(OscilloscopeVisualizer::DisplayMode);
+VARIANT_ENUM_CAST(OscilloscopeVisualizer::XYRenderMode);
+VARIANT_ENUM_CAST(OscilloscopeVisualizer::XYOrientation);
 
 #endif // OSCILLOSCOPE_VISUALIZER_H

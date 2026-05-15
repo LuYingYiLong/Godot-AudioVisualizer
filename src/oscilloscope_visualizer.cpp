@@ -25,12 +25,18 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_use_bus"), &OscilloscopeVisualizer::get_use_bus);
 		ClassDB::bind_method(D_METHOD("set_bus", "bus"), &OscilloscopeVisualizer::set_bus);
 		ClassDB::bind_method(D_METHOD("get_bus"), &OscilloscopeVisualizer::get_bus);
+		ClassDB::bind_method(D_METHOD("set_bus_backend", "backend"), &OscilloscopeVisualizer::set_bus_backend);
+		ClassDB::bind_method(D_METHOD("get_bus_backend"), &OscilloscopeVisualizer::get_bus_backend);
 		ClassDB::bind_method(D_METHOD("set_samples", "samples"), &OscilloscopeVisualizer::set_samples);
 		ClassDB::bind_method(D_METHOD("get_samples"), &OscilloscopeVisualizer::get_samples);
 		ClassDB::bind_method(D_METHOD("set_sample_count", "count"), &OscilloscopeVisualizer::set_sample_count);
 		ClassDB::bind_method(D_METHOD("get_sample_count"), &OscilloscopeVisualizer::get_sample_count);
 		ClassDB::bind_method(D_METHOD("set_display_mode", "mode"), &OscilloscopeVisualizer::set_display_mode);
 		ClassDB::bind_method(D_METHOD("get_display_mode"), &OscilloscopeVisualizer::get_display_mode);
+		ClassDB::bind_method(D_METHOD("set_xy_render_mode", "mode"), &OscilloscopeVisualizer::set_xy_render_mode);
+		ClassDB::bind_method(D_METHOD("get_xy_render_mode"), &OscilloscopeVisualizer::get_xy_render_mode);
+		ClassDB::bind_method(D_METHOD("set_xy_orientation", "orientation"), &OscilloscopeVisualizer::set_xy_orientation);
+		ClassDB::bind_method(D_METHOD("get_xy_orientation"), &OscilloscopeVisualizer::get_xy_orientation);
 		ClassDB::bind_method(D_METHOD("set_frozen", "enabled"), &OscilloscopeVisualizer::set_frozen);
 		ClassDB::bind_method(D_METHOD("get_frozen"), &OscilloscopeVisualizer::get_frozen);
 		ClassDB::bind_method(D_METHOD("set_draw_grid", "enabled"), &OscilloscopeVisualizer::set_draw_grid);
@@ -43,6 +49,12 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_line_width"), &OscilloscopeVisualizer::get_line_width);
 		ClassDB::bind_method(D_METHOD("set_point_size", "size"), &OscilloscopeVisualizer::set_point_size);
 		ClassDB::bind_method(D_METHOD("get_point_size"), &OscilloscopeVisualizer::get_point_size);
+		ClassDB::bind_method(D_METHOD("set_xy_line_width", "width"), &OscilloscopeVisualizer::set_xy_line_width);
+		ClassDB::bind_method(D_METHOD("get_xy_line_width"), &OscilloscopeVisualizer::get_xy_line_width);
+		ClassDB::bind_method(D_METHOD("set_xy_glow_width", "width"), &OscilloscopeVisualizer::set_xy_glow_width);
+		ClassDB::bind_method(D_METHOD("get_xy_glow_width"), &OscilloscopeVisualizer::get_xy_glow_width);
+		ClassDB::bind_method(D_METHOD("set_xy_persistence", "persistence"), &OscilloscopeVisualizer::set_xy_persistence);
+		ClassDB::bind_method(D_METHOD("get_xy_persistence"), &OscilloscopeVisualizer::get_xy_persistence);
 		ClassDB::bind_method(D_METHOD("set_padding", "padding"), &OscilloscopeVisualizer::set_padding);
 		ClassDB::bind_method(D_METHOD("get_padding"), &OscilloscopeVisualizer::get_padding);
 		ClassDB::bind_method(D_METHOD("set_stereo_gap", "gap"), &OscilloscopeVisualizer::set_stereo_gap);
@@ -59,18 +71,26 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_right_color"), &OscilloscopeVisualizer::get_right_color);
 		ClassDB::bind_method(D_METHOD("set_xy_color", "color"), &OscilloscopeVisualizer::set_xy_color);
 		ClassDB::bind_method(D_METHOD("get_xy_color"), &OscilloscopeVisualizer::get_xy_color);
+		ClassDB::bind_method(D_METHOD("set_xy_glow_color", "color"), &OscilloscopeVisualizer::set_xy_glow_color);
+		ClassDB::bind_method(D_METHOD("get_xy_glow_color"), &OscilloscopeVisualizer::get_xy_glow_color);
 
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_bus"), "set_use_bus", "get_use_bus");
+		ADD_PROPERTY(PropertyInfo(Variant::INT, "bus_backend", PROPERTY_HINT_ENUM, "Godot,FmodPlayer"), "set_bus_backend", "get_bus_backend");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "bus", PROPERTY_HINT_ENUM_SUGGESTION, "Master"), "set_bus", "get_bus");
 		ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR2_ARRAY, "samples"), "set_samples", "get_samples");
 		ADD_PROPERTY(PropertyInfo(Variant::INT, "sample_count", PROPERTY_HINT_RANGE, "16,8192,1"), "set_sample_count", "get_sample_count");
 		ADD_PROPERTY(PropertyInfo(Variant::INT, "display_mode", PROPERTY_HINT_ENUM, "Waveform,XY,Lissajous"), "set_display_mode", "get_display_mode");
+		ADD_PROPERTY(PropertyInfo(Variant::INT, "xy_render_mode", PROPERTY_HINT_ENUM, "Points,Line,Phosphor Beam"), "set_xy_render_mode", "get_xy_render_mode");
+		ADD_PROPERTY(PropertyInfo(Variant::INT, "xy_orientation", PROPERTY_HINT_ENUM, "Auto,Raw L/R,Mid/Side,Rotate -45,Invert Y"), "set_xy_orientation", "get_xy_orientation");
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "frozen"), "set_frozen", "get_frozen");
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "draw_grid"), "set_draw_grid", "get_draw_grid");
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "draw_center"), "set_draw_center", "get_draw_center");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "gain", PROPERTY_HINT_RANGE, "0.0,8.0,0.01"), "set_gain", "get_gain");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "line_width", PROPERTY_HINT_RANGE, "1.0,16.0,0.5"), "set_line_width", "get_line_width");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "point_size", PROPERTY_HINT_RANGE, "1.0,12.0,0.5"), "set_point_size", "get_point_size");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "xy_line_width", PROPERTY_HINT_RANGE, "0.5,16.0,0.5"), "set_xy_line_width", "get_xy_line_width");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "xy_glow_width", PROPERTY_HINT_RANGE, "0.0,64.0,0.5"), "set_xy_glow_width", "get_xy_glow_width");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "xy_persistence", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"), "set_xy_persistence", "get_xy_persistence");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "padding", PROPERTY_HINT_RANGE, "0.0,64.0,0.5"), "set_padding", "get_padding");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "stereo_gap", PROPERTY_HINT_RANGE, "0.0,64.0,0.5"), "set_stereo_gap", "get_stereo_gap");
 		ADD_PROPERTY(PropertyInfo(Variant::COLOR, "background_color"), "set_background_color", "get_background_color");
@@ -79,6 +99,7 @@ namespace godot {
 		ADD_PROPERTY(PropertyInfo(Variant::COLOR, "left_color"), "set_left_color", "get_left_color");
 		ADD_PROPERTY(PropertyInfo(Variant::COLOR, "right_color"), "set_right_color", "get_right_color");
 		ADD_PROPERTY(PropertyInfo(Variant::COLOR, "xy_color"), "set_xy_color", "get_xy_color");
+		ADD_PROPERTY(PropertyInfo(Variant::COLOR, "xy_glow_color"), "set_xy_glow_color", "get_xy_glow_color");
 	}
 
 	OscilloscopeVisualizer::OscilloscopeVisualizer() {
@@ -126,19 +147,16 @@ namespace godot {
 	void OscilloscopeVisualizer::_validate_property(PropertyInfo& p_property) const {
 		const String name = p_property.name;
 		if (name == StringName("bus")) {
-			String bus_list;
-			AudioServer* audio_server = AudioServer::get_singleton();
-
-			if (audio_server) {
-				int bus_count = audio_server->get_bus_count();
-				for (int i = 0; i < bus_count; i++) {
-					if (i > 0) bus_list += ",";
-					bus_list += audio_server->get_bus_name(i);
-				}
-			}
-
 			p_property.hint = PROPERTY_HINT_ENUM;
-			p_property.hint_string = bus_list;
+			p_property.hint_string = AudioVisualizerBusUtils::get_bus_hint_string(bus_backend);
+		}
+		else if (name == StringName("xy_render_mode") || name == StringName("xy_orientation") || name == StringName("xy_line_width") || name == StringName("xy_glow_width") || name == StringName("xy_persistence") || name == StringName("xy_glow_color")) {
+			if (display_mode == DISPLAY_MODE_WAVEFORM) {
+				p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+			}
+			else if ((name == StringName("xy_glow_width") || name == StringName("xy_persistence") || name == StringName("xy_glow_color")) && xy_render_mode != XY_RENDER_MODE_PHOSPHOR) {
+				p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+			}
 		}
 	}
 
@@ -146,8 +164,13 @@ namespace godot {
 		bool found_capture = false;
 		if (use_bus) {
 			PackedVector2Array frames;
-			if (AudioVisualizerBusUtils::get_capture_frames(bus, std::max(1, sample_count), frames)) {
-				append_samples(frames);
+			if (AudioVisualizerBusUtils::get_capture_frames(bus, bus_backend, std::max(1, sample_count), frames)) {
+				if (frames.size() > 0) {
+					append_samples(frames);
+				}
+				else {
+					decay_live_samples();
+				}
 				found_capture = true;
 			}
 		}
@@ -177,6 +200,24 @@ namespace godot {
 		const int overflow = (int)live_samples.size() - std::max(1, sample_count);
 		if (overflow > 0) {
 			live_samples.erase(live_samples.begin(), live_samples.begin() + overflow);
+		}
+	}
+
+	void OscilloscopeVisualizer::decay_live_samples() {
+		if (live_samples.empty()) {
+			return;
+		}
+
+		bool has_signal = false;
+		for (Vector2& sample : live_samples) {
+			sample = Vector2(sample.x * 0.72f, sample.y * 0.72f);
+			if (std::abs(sample.x) > 0.0005f || std::abs(sample.y) > 0.0005f) {
+				has_signal = true;
+			}
+		}
+
+		if (!has_signal) {
+			live_samples.clear();
 		}
 	}
 
@@ -245,28 +286,95 @@ namespace godot {
 			return;
 		}
 
+		const int max_points = xy_render_mode == XY_RENDER_MODE_POINTS ? 1024 : 2048;
+		const int stride = std::max(1, count / max_points);
+		const int point_count = ((count - 1) / stride) + 1;
+		PackedVector2Array xy_points;
+		xy_points.resize(point_count);
+
+		int point_index = 0;
+		for (int i = 0; i < count; i += stride) {
+			xy_points.set(point_index, get_xy_point(display_samples[(size_t)i], p_rect, p_lissajous));
+			point_index++;
+		}
+
+		if (point_index != point_count) {
+			xy_points.resize(point_index);
+		}
+
+		if (xy_render_mode == XY_RENDER_MODE_LINE) {
+			draw_polyline(xy_points, xy_color, xy_line_width, true);
+			return;
+		}
+
+		if (xy_render_mode == XY_RENDER_MODE_PHOSPHOR) {
+			if (xy_glow_width > 0.0f) {
+				draw_xy_segment_trail(xy_points, xy_glow_color, xy_glow_width, xy_persistence);
+			}
+			draw_xy_segment_trail(xy_points, xy_color, xy_line_width, xy_persistence * 0.5f);
+			return;
+		}
+
+		const float point = std::max(1.0f, point_size);
+		const int xy_point_count = xy_points.size();
+		for (int i = 0; i < xy_point_count; i++) {
+			const Vector2 point_position = xy_points[i];
+			const float age = xy_point_count > 1 ? (float)i / (float)(xy_point_count - 1) : 1.0f;
+			Color color = xy_color;
+			color.a *= 0.25f + 0.75f * age;
+			draw_rect(Rect2(Vector2(point_position.x - point * 0.5f, point_position.y - point * 0.5f), Vector2(point, point)), color);
+		}
+	}
+
+	Vector2 OscilloscopeVisualizer::get_xy_point(const Vector2& p_sample, const Rect2& p_rect, bool p_lissajous) const {
 		const float cx = p_rect.position.x + p_rect.size.x * 0.5f;
 		const float cy = p_rect.position.y + p_rect.size.y * 0.5f;
 		const float radius = std::max(1.0f, std::min(p_rect.size.x, p_rect.size.y) * 0.46f);
-		const int stride = std::max(1, count / 1024);
-		const float point = std::max(1.0f, point_size);
+		const Vector2 sample = clamp_sample(p_sample, gain);
+		const float half_sqrt = 0.70710678f;
+		int orientation = xy_orientation;
+		if (orientation == XY_ORIENTATION_AUTO) {
+			orientation = p_lissajous ? XY_ORIENTATION_MID_SIDE : XY_ORIENTATION_LEFT_RIGHT;
+		}
 
-		for (int i = 0; i < count; i += stride) {
-			const Vector2 sample = clamp_sample(display_samples[(size_t)i], gain);
-			float x_value = sample.x;
-			float y_value = sample.y;
+		float x_value = sample.x;
+		float y_value = sample.y;
+		switch (orientation) {
+			case XY_ORIENTATION_MID_SIDE:
+				x_value = (sample.x - sample.y) * half_sqrt;
+				y_value = (sample.x + sample.y) * half_sqrt;
+				break;
+			case XY_ORIENTATION_ROTATE_NEGATIVE_45:
+				x_value = (sample.x + sample.y) * half_sqrt;
+				y_value = (sample.y - sample.x) * half_sqrt;
+				break;
+			case XY_ORIENTATION_INVERT_Y:
+				y_value = -sample.y;
+				break;
+			case XY_ORIENTATION_LEFT_RIGHT:
+			default:
+				break;
+		}
 
-			if (p_lissajous) {
-				x_value = (sample.x - sample.y) * 0.70710678f;
-				y_value = (sample.x + sample.y) * 0.70710678f;
-			}
+		return Vector2(cx + x_value * radius, cy - y_value * radius);
+	}
 
-			const float x = cx + x_value * radius;
-			const float y = cy - y_value * radius;
-			const float age = count > 1 ? (float)i / (float)(count - 1) : 1.0f;
-			Color color = xy_color;
-			color.a *= 0.25f + 0.75f * age;
-			draw_rect(Rect2(Vector2(x - point * 0.5f, y - point * 0.5f), Vector2(point, point)), color);
+	void OscilloscopeVisualizer::draw_xy_segment_trail(const PackedVector2Array& p_points, const Color& p_color, float p_width, float p_persistence) {
+		const int count = p_points.size();
+		if (count <= 1 || p_width <= 0.0f) {
+			return;
+		}
+
+		const float width = std::max(0.5f, p_width);
+		const float persistence = AudioVisualizerBusUtils::clamp_float(p_persistence, 0.0f, 1.0f);
+		const float alpha_floor = 0.06f + 0.5f * persistence;
+
+		for (int i = 1; i < count; i++) {
+			const float age = (float)i / (float)(count - 1);
+			const float fade = alpha_floor + (1.0f - alpha_floor) * age;
+			Color color = p_color;
+			color.a *= fade;
+			draw_line(p_points[i - 1], p_points[i], color, width, true);
 		}
 	}
 
@@ -286,6 +394,21 @@ namespace godot {
 
 	StringName OscilloscopeVisualizer::get_bus() const {
 		return bus;
+	}
+
+	void OscilloscopeVisualizer::set_bus_backend(int p_backend) {
+		const int new_backend = std::min(std::max(static_cast<int>(AudioVisualizerBusUtils::BUS_BACKEND_GODOT), p_backend), static_cast<int>(AudioVisualizerBusUtils::BUS_BACKEND_FMOD_PLAYER));
+		if (bus_backend == new_backend) {
+			return;
+		}
+
+		bus_backend = new_backend;
+		notify_property_list_changed();
+		queue_redraw();
+	}
+
+	int OscilloscopeVisualizer::get_bus_backend() const {
+		return bus_backend;
 	}
 
 	void OscilloscopeVisualizer::set_samples(const PackedVector2Array& p_samples) {
@@ -313,11 +436,31 @@ namespace godot {
 
 	void OscilloscopeVisualizer::set_display_mode(int p_mode) {
 		display_mode = std::max(0, std::min(2, p_mode));
+		notify_property_list_changed();
 		queue_redraw();
 	}
 
 	int OscilloscopeVisualizer::get_display_mode() const {
 		return display_mode;
+	}
+
+	void OscilloscopeVisualizer::set_xy_render_mode(int p_mode) {
+		xy_render_mode = std::max(0, std::min(2, p_mode));
+		notify_property_list_changed();
+		queue_redraw();
+	}
+
+	int OscilloscopeVisualizer::get_xy_render_mode() const {
+		return xy_render_mode;
+	}
+
+	void OscilloscopeVisualizer::set_xy_orientation(int p_orientation) {
+		xy_orientation = std::max(0, std::min(4, p_orientation));
+		queue_redraw();
+	}
+
+	int OscilloscopeVisualizer::get_xy_orientation() const {
+		return xy_orientation;
 	}
 
 	void OscilloscopeVisualizer::set_frozen(bool p_enabled) {
@@ -372,6 +515,33 @@ namespace godot {
 
 	float OscilloscopeVisualizer::get_point_size() const {
 		return point_size;
+	}
+
+	void OscilloscopeVisualizer::set_xy_line_width(float p_width) {
+		xy_line_width = std::max(0.5f, p_width);
+		queue_redraw();
+	}
+
+	float OscilloscopeVisualizer::get_xy_line_width() const {
+		return xy_line_width;
+	}
+
+	void OscilloscopeVisualizer::set_xy_glow_width(float p_width) {
+		xy_glow_width = std::max(0.0f, p_width);
+		queue_redraw();
+	}
+
+	float OscilloscopeVisualizer::get_xy_glow_width() const {
+		return xy_glow_width;
+	}
+
+	void OscilloscopeVisualizer::set_xy_persistence(float p_persistence) {
+		xy_persistence = AudioVisualizerBusUtils::clamp_float(p_persistence, 0.0f, 1.0f);
+		queue_redraw();
+	}
+
+	float OscilloscopeVisualizer::get_xy_persistence() const {
+		return xy_persistence;
 	}
 
 	void OscilloscopeVisualizer::set_padding(float p_padding) {
@@ -444,5 +614,14 @@ namespace godot {
 
 	Color OscilloscopeVisualizer::get_xy_color() const {
 		return xy_color;
+	}
+
+	void OscilloscopeVisualizer::set_xy_glow_color(const Color& p_color) {
+		xy_glow_color = p_color;
+		queue_redraw();
+	}
+
+	Color OscilloscopeVisualizer::get_xy_glow_color() const {
+		return xy_glow_color;
 	}
 }

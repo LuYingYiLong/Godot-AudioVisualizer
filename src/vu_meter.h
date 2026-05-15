@@ -6,10 +6,19 @@
 #include <godot_cpp/variant/color.hpp>
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/string_name.hpp>
+#include <godot_cpp/variant/vector2.hpp>
 
 namespace godot {
 	class VUMeter : public Control {
 		GDCLASS(VUMeter, Control)
+
+	public:
+		enum ChannelMode {
+			CHANNEL_MODE_MAX = 0,
+			CHANNEL_MODE_LEFT = 1,
+			CHANNEL_MODE_RIGHT = 2,
+			CHANNEL_MODE_AVERAGE = 3
+		};
 
 	private:
 		float dbfs = -60.0f;
@@ -22,6 +31,8 @@ namespace godot {
 		float content_padding = 3.0f;
 		bool use_bus = true;
 		StringName bus = StringName("Master");
+		int bus_backend = 0;
+		int channel_mode = CHANNEL_MODE_MAX;
 		bool animation_enabled = true;
 		float displayed_dbfs = -60.0f;
 		float rise_db_per_second = 180.0f;
@@ -51,6 +62,7 @@ namespace godot {
 		float move_toward(float p_from, float p_to, float p_delta) const;
 		float get_current_dbfs() const;
 		float get_bus_dbfs(bool& r_found_analyzer) const;
+		float select_channel_magnitude(const Vector2& p_magnitude) const;
 		float db_to_y(float p_db, float p_height) const;
 		void draw_db_segment(float p_from_db, float p_to_db, const Color& p_color, float p_meter_width, float p_height);
 		void draw_peak_bar(float p_meter_width, float p_height);
@@ -93,6 +105,12 @@ namespace godot {
 
 		void set_bus(const StringName& p_bus);
 		StringName get_bus() const;
+
+		void set_bus_backend(int p_backend);
+		int get_bus_backend() const;
+
+		void set_channel_mode(int p_mode);
+		int get_channel_mode() const;
 
 		void set_animation_enabled(bool p_enabled);
 		bool get_animation_enabled() const;

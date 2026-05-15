@@ -1,5 +1,7 @@
 #include "vu_meter.h"
 
+#include "audio_visualizer_bus_utils.h"
+
 #include <godot_cpp/classes/audio_effect.hpp>
 #include <godot_cpp/classes/audio_effect_instance.hpp>
 #include <godot_cpp/classes/audio_effect_spectrum_analyzer.hpp>
@@ -49,6 +51,12 @@ namespace godot {
 
 		ClassDB::bind_method(D_METHOD("set_bus", "bus"), &VUMeter::set_bus);
 		ClassDB::bind_method(D_METHOD("get_bus"), &VUMeter::get_bus);
+
+		ClassDB::bind_method(D_METHOD("set_bus_backend", "backend"), &VUMeter::set_bus_backend);
+		ClassDB::bind_method(D_METHOD("get_bus_backend"), &VUMeter::get_bus_backend);
+
+		ClassDB::bind_method(D_METHOD("set_channel_mode", "mode"), &VUMeter::set_channel_mode);
+		ClassDB::bind_method(D_METHOD("get_channel_mode"), &VUMeter::get_channel_mode);
 
 		ClassDB::bind_method(D_METHOD("set_animation_enabled", "enabled"), &VUMeter::set_animation_enabled);
 		ClassDB::bind_method(D_METHOD("get_animation_enabled"), &VUMeter::get_animation_enabled);
@@ -123,7 +131,9 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_label_color"), &VUMeter::get_label_color);
 
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_bus"), "set_use_bus", "get_use_bus");
+		ADD_PROPERTY(PropertyInfo(Variant::INT, "bus_backend", PROPERTY_HINT_ENUM, "Godot,FmodPlayer"), "set_bus_backend", "get_bus_backend");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "bus", PROPERTY_HINT_ENUM_SUGGESTION, "Master"), "set_bus", "get_bus");
+		ADD_PROPERTY(PropertyInfo(Variant::INT, "channel_mode", PROPERTY_HINT_ENUM, "Max,Left,Right,Average"), "set_channel_mode", "get_channel_mode");
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "animation_enabled"), "set_animation_enabled", "get_animation_enabled");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "rise_db_per_second", PROPERTY_HINT_RANGE, "1.0,720.0,1.0"), "set_rise_db_per_second", "get_rise_db_per_second");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fall_db_per_second", PROPERTY_HINT_RANGE, "1.0,720.0,1.0"), "set_fall_db_per_second", "get_fall_db_per_second");
@@ -242,19 +252,8 @@ namespace godot {
 		}
 
 		if (name == StringName("bus")) {
-			String bus_list;
-			AudioServer* audio_server = AudioServer::get_singleton();
-
-			if (audio_server) {
-				int bus_count = audio_server->get_bus_count();
-				for (int i = 0; i < bus_count; i++) {
-					if (i > 0) bus_list += ",";
-					bus_list += audio_server->get_bus_name(i);
-				}
-			}
-
 			p_property.hint = PROPERTY_HINT_ENUM;
-			p_property.hint_string = bus_list;
+			p_property.hint_string = AudioVisualizerBusUtils::get_bus_hint_string(bus_backend);
 		}
 	}
 
@@ -321,41 +320,36 @@ namespace godot {
 		r_found_analyzer = false;
 
 		AudioServer* audio_server = AudioServer::get_singleton();
-		if (!audio_server) {
+		if (!audio_server && bus_backend == AudioVisualizerBusUtils::BUS_BACKEND_GODOT) {
 			return dbfs;
 		}
 
-		const int bus_index = audio_server->get_bus_index(bus);
-		if (bus_index < 0) {
+		if (audio_server && bus_backend == AudioVisualizerBusUtils::BUS_BACKEND_GODOT && audio_server->get_bus_index(bus) < 0) {
 			return dbfs;
 		}
 
-		const int effect_count = audio_server->get_bus_effect_count(bus_index);
-		for (int effect_index = 0; effect_index < effect_count; effect_index++) {
-			if (!audio_server->is_bus_effect_enabled(bus_index, effect_index)) {
-				continue;
-			}
-
-			Ref<AudioEffect> effect = audio_server->get_bus_effect(bus_index, effect_index);
-			Ref<AudioEffectSpectrumAnalyzer> analyzer = effect;
-			if (!analyzer.is_valid()) {
-				continue;
-			}
-
-			Ref<AudioEffectInstance> effect_instance = audio_server->get_bus_effect_instance(bus_index, effect_index);
-			Ref<AudioEffectSpectrumAnalyzerInstance> analyzer_instance = effect_instance;
-			if (!analyzer_instance.is_valid()) {
-				continue;
-			}
-
-			const float mix_rate = std::max(1.0f, audio_server->get_mix_rate());
-			const Vector2 magnitude = analyzer_instance->get_magnitude_for_frequency_range(20.0f, std::max(20.0f, mix_rate * 0.5f), AudioEffectSpectrumAnalyzerInstance::MAGNITUDE_MAX);
-			const float linear_magnitude = std::max(magnitude.x, magnitude.y);
+		const float mix_rate = audio_server ? std::max(1.0f, audio_server->get_mix_rate()) : 48000.0f;
+		Vector2 magnitude;
+		if (AudioVisualizerBusUtils::get_spectrum_magnitude_for_frequency_range(bus, bus_backend, 20.0f, std::max(20.0f, mix_rate * 0.5f), magnitude)) {
 			r_found_analyzer = true;
-			return linear_to_db(linear_magnitude);
+			return linear_to_db(std::max(0.0f, select_channel_magnitude(magnitude)));
 		}
 
 		return dbfs;
+	}
+
+	float VUMeter::select_channel_magnitude(const Vector2& p_magnitude) const {
+		switch (channel_mode) {
+			case CHANNEL_MODE_LEFT:
+				return p_magnitude.x;
+			case CHANNEL_MODE_RIGHT:
+				return p_magnitude.y;
+			case CHANNEL_MODE_AVERAGE:
+				return (p_magnitude.x + p_magnitude.y) * 0.5f;
+			case CHANNEL_MODE_MAX:
+			default:
+				return std::max(p_magnitude.x, p_magnitude.y);
+		}
 	}
 
 	float VUMeter::db_to_y(float p_db, float p_height) const {
@@ -509,6 +503,35 @@ namespace godot {
 
 	StringName VUMeter::get_bus() const {
 		return bus;
+	}
+
+	void VUMeter::set_bus_backend(int p_backend) {
+		const int new_backend = std::min(std::max(static_cast<int>(AudioVisualizerBusUtils::BUS_BACKEND_GODOT), p_backend), static_cast<int>(AudioVisualizerBusUtils::BUS_BACKEND_FMOD_PLAYER));
+		if (bus_backend == new_backend) {
+			return;
+		}
+
+		bus_backend = new_backend;
+		notify_property_list_changed();
+		queue_redraw();
+	}
+
+	int VUMeter::get_bus_backend() const {
+		return bus_backend;
+	}
+
+	void VUMeter::set_channel_mode(int p_mode) {
+		const int new_mode = std::min(std::max(static_cast<int>(CHANNEL_MODE_MAX), p_mode), static_cast<int>(CHANNEL_MODE_AVERAGE));
+		if (channel_mode == new_mode) {
+			return;
+		}
+
+		channel_mode = new_mode;
+		queue_redraw();
+	}
+
+	int VUMeter::get_channel_mode() const {
+		return channel_mode;
 	}
 
 	void VUMeter::set_animation_enabled(bool p_enabled) {

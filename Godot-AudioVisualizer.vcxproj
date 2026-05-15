@@ -79,12 +79,22 @@
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\audio_visualizer_bus_utils.h" />
+    <ClInclude Include="src\oscilloscope_visualizer.h" />
+    <ClInclude Include="src\phase_meter.h" />
+    <ClInclude Include="src\phase_scope_visualizer.h" />
+    <ClInclude Include="src\realtime_spectrum_visualizer.h" />
     <ClInclude Include="src\spectrum_visualizer.h" />
     <ClInclude Include="src\vu_meter.h" />
     <ClInclude Include="src\wave_visualizer.h" />
     <ClInclude Include="src\register_types.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\audio_visualizer_bus_utils.cpp" />
+    <ClCompile Include="src\oscilloscope_visualizer.cpp" />
+    <ClCompile Include="src\phase_meter.cpp" />
+    <ClCompile Include="src\phase_scope_visualizer.cpp" />
+    <ClCompile Include="src\realtime_spectrum_visualizer.cpp" />
     <ClCompile Include="src\spectrum_visualizer.cpp" />
     <ClCompile Include="src\vu_meter.cpp" />
     <ClCompile Include="src\wave_visualizer.cpp" />

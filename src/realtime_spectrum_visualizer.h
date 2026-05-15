@@ -23,6 +23,7 @@ namespace godot {
 	private:
 		bool use_bus = true;
 		StringName bus = StringName("Master");
+		int bus_backend = 0;
 		PackedFloat32Array magnitudes;
 		bool magnitudes_are_db = false;
 
@@ -49,13 +50,13 @@ namespace godot {
 		float line_width = 2.0f;
 		float padding = 6.0f;
 
-		Color background_color = Color(0.065f, 0.055f, 0.09f, 1.0f);
-		Color grid_color = Color(0.95f, 0.65f, 0.95f, 0.22f);
+		Color background_color = Color("#000000");
+		Color grid_color = Color("#f2f2f238");
 		Color low_color = Color(0.15f, 0.95f, 0.75f, 1.0f);
 		Color mid_color = Color(1.0f, 0.82f, 0.22f, 1.0f);
 		Color high_color = Color(1.0f, 0.23f, 0.52f, 1.0f);
-		Color line_color = Color(1.0f, 0.72f, 0.95f, 1.0f);
-		Color fill_color = Color(1.0f, 0.24f, 0.65f, 0.22f);
+		Color line_color = Color("#ffffff");
+		Color fill_color = Color("#ffffff38");
 		Color peak_color = Color(1.0f, 1.0f, 1.0f, 0.85f);
 
 		std::vector<float> current_db;
@@ -89,6 +90,9 @@ namespace godot {
 
 		void set_bus(const StringName& p_bus);
 		StringName get_bus() const;
+
+		void set_bus_backend(int p_backend);
+		int get_bus_backend() const;
 
 		void set_magnitudes(const PackedFloat32Array& p_magnitudes);
 		PackedFloat32Array get_magnitudes() const;
